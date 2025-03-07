@@ -1,0 +1,166 @@
+<p-drawer
+  [visible]="visible()"
+  position="right"
+  [style]="{ width: '30rem' }"
+  [modal]="true"
+  (visibleChange)="onVisibleChange($event)"
+  class="h-full"
+>
+  <ng-template pTemplate="header">
+    <h2 class="text-xl font-semibold">Edit {{ element()?.type | titlecase }}</h2>
+  </ng-template>
+
+  <div class="h-full flex flex-col">
+    <div class="flex-1 overflow-y-auto">
+      @if(group()) {
+        <div class="p-4">
+          <form [formGroup]="formGroup" class="space-y-6">
+            <div>
+              <label for="label" class="block font-medium text-sm mb-1">
+                Group Name
+                <span class="text-red-500">*</span>
+              </label>
+              <input
+                pInputText
+                [formControlName]="'groupName'"
+                placeholder="Enter Group Name"
+                class="w-full p-2 border border-gray-300 rounded-lg text-sm"
+              />
+              @if((formGroup.controls['groupName'].hasError('required') && formGroup.controls['groupName'].touched) || isSubmitted()) {
+                <small class="text-red-500 text-xs mt-1">Group name is required</small>
+              }
+            </div>
+            <label for="groupDescription" class="block font-medium text-sm mb-1">
+              Group Description
+            </label>
+            <textarea
+              [formControlName]="'groupDescription'"
+              placeholder="Enter Group Description"
+              class="w-full p-2 border border-gray-300 rounded-lg text-sm"
+            ></textarea>
+          </form>
+        </div>
+      } @else {
+        <div class="p-4">
+          <form [formGroup]="elementForm" class="space-y-6">
+            <div>
+              <label for="label" class="block font-medium text-sm mb-1">
+                Label
+                <span class="text-red-500">*</span>
+              </label>
+              <input
+                pInputText
+                id="label"
+                formControlName="label"
+                placeholder="Enter element label"
+                class="w-full p-2 border border-gray-300 rounded-lg text-sm"
+              />
+            </div>
+
+            @if (element()?.type === 'dropdown') {
+              <div>
+                <label class="block font-medium text-sm mb-1">Preview</label>
+                <p-dropdown
+                  [formControlName]="'defaultValue'"
+                  [options]="selectionOptions()"
+                  [placeholder]="elementForm.get('placeholder')?.value || 'Select an option'"
+                  class="w-full"
+                  optionLabel="label"
+                  optionValue="value"
+                ></p-dropdown>
+              </div>
+            }
+
+            @if (element()?.type === 'dropdown' || element()?.type?.includes('selection')) {
+              <div class="space-y-2">
+                <label class="block font-medium text-sm mb-1">Add Options</label>
+                <div class="space-y-2">
+                  <input
+                    pInputText
+                    [value]="newOption().label"
+                    (input)="onOptionLabelInput($event)"
+                    placeholder="Option Label"
+                    class="w-full"
+                    (keyup.enter)="addOption()"
+                  />
+                  <input
+                    pInputText
+                    [value]="newOption().value"
+                    (input)="onOptionValueInput($event)"
+                    placeholder="Option Value"
+                    class="w-full"
+                    (keyup.enter)="addOption()"
+                  />
+                </div>
+
+                <div class="space-y-2 mt-2">
+                  @for (option of selectionOptions(); track option.value) {
+                    <div class="flex items-center justify-between bg-gray-50 p-2 rounded">
+                      <span>{{ option.label }}</span>
+                      <button
+                        type="button"
+                        class="text-red-500 hover:text-red-700 p-1 rounded-full hover:bg-red-50"
+                        (click)="removeOption($index)"
+                      >
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </div>
+                  }
+                  <button
+                    pButton
+                    icon="pi pi-plus"
+                    (click)="addOption()"
+                    [disabled]="!newOption().label.trim() || !newOption().value.trim()"
+                    class="p-button-success w-full"
+                  >Add Option</button>
+                </div>
+              </div>
+            }
+
+            <div class="flex items-center gap-2">
+              <p-checkbox
+                formControlName="required"
+                [binary]="true"
+                inputId="required"
+              ></p-checkbox>
+              <label for="required" class="text-sm">
+                Make this field mandatory
+                <span class="text-red-500">*</span>
+              </label>
+            </div>
+
+            <div>
+              <label for="placeholder" class="block font-medium text-sm mb-1">
+                Placeholder
+              </label>
+              <input
+                pInputText
+                id="placeholder"
+                formControlName="placeholder"
+                placeholder="Enter placeholder text"
+                class="w-full"
+              />
+            </div>
+          </form>
+        </div>
+      }
+    </div>
+
+    <div class="p-4 border-t">
+      <div class="flex justify-end gap-2">
+        <button
+          pButton
+          label="Cancel"
+          class="p-button-text"
+          (click)="onCancel()"
+        ></button>
+        <button
+          pButton
+          label="Save"
+          [disabled]="group() ? !formGroup.valid : !elementForm.valid"
+          (click)="onSave()"
+        ></button>
+      </div>
+    </div>
+  </div>
+</p-drawer>

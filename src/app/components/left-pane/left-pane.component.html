@@ -1,0 +1,93 @@
+<div class="p-4">
+  <div class="flex justify-between items-center mb-4">
+    <h2 class="text-lg font-medium">Field Groups</h2>
+    <button
+      class="flex items-center text-blue-600 hover:text-blue-700 text-sm font-medium"
+      (click)="visible.set(true)"
+    >
+      <i class="bi bi-plus-circle mr-1"></i>
+      Create new
+    </button>
+  </div>
+
+  <div class="space-y-1">
+    @for (group of formGroups$ | async; track group.id) {
+      <div
+        class="flex items-center px-3 py-2 rounded-lg cursor-pointer hover:bg-gray-50"
+        [class.bg-blue-50]="(selectedGroup$ | async)?.id === group.id"
+        (click)="selectGroup(group)"
+      >
+        <div class="flex items-center gap-2 flex-grow">
+          <i class="bi bi-grid text-gray-400"></i>
+          <span class="text-sm">{{ group.name }}</span>
+        </div>
+        <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button
+            class="text-gray-400 hover:text-gray-600"
+            (click)="editGroup(group, $event)"
+          >
+            <i class="bi bi-pencil"></i>
+          </button>
+          <button
+            class="text-gray-400 hover:text-red-600"
+            (click)="deleteGroup(group, $event)"
+          >
+            <i class="bi bi-trash"></i>
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+</div>
+
+<p-dialog
+  [header]="dialogTitle()"
+  [modal]="true"
+  [(visible)]="visible"
+  [style]="{ width: '25rem' }"
+>
+  <div class="flex flex-col space-y-4">
+    <form [formGroup]="newFormGroup">
+      <div class="w-full">
+        <label for="name" class="block font-medium text-sm mb-1">
+          Group Name
+          <span class="text-red-500">*</span>
+        </label>
+        <input
+          pInputText
+          id="name"
+          formControlName="name"
+          placeholder="Enter group name"
+          class="w-full p-2 border border-gray-300 rounded-lg text-sm"
+        />
+        @if(newFormGroup.controls.name.hasError('required') && (newFormGroup.controls.name.touched || isSubmitted())){
+          <small class="text-red-500 text-xs mt-1">Group name is required</small>
+        }
+      </div>
+      <div class="w-full mt-4">
+        <label for="description" class="block font-medium text-sm mb-1">
+          Description
+        </label>
+        <input
+          pInputText
+          id="description"
+          formControlName="description"
+          placeholder="Add description..."
+          class="w-full p-2 border border-gray-300 rounded-lg text-sm"
+        />
+      </div>
+      <div class="flex justify-end gap-2 mt-6">
+        <p-button
+          label="Cancel"
+          severity="secondary"
+          (click)="cancelFormGroup()"
+          styleClass="p-button-text"
+        />
+        <p-button
+          [label]="isEditing() ? 'Update' : 'Save'"
+          (click)="saveFormGroup()"
+        />
+      </div>
+    </form>
+  </div>
+</p-dialog>

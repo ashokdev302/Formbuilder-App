@@ -1,0 +1,144 @@
+<div
+  class="h-full p-4 bg-gray-50"
+  (dragover)="onDragOver($event)"
+  (drop)="onDrop($event)"
+>
+  @if (formGroupService.selectedGroup$ | async; as selectedGroup) {
+    <div class="space-y-4">
+      <div class="flex items-center justify-between">
+        <h2 class="text-xl font-semibold">{{ selectedGroup.name }}</h2>
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            class="text-gray-400 hover:text-gray-600"
+            (click)="togglePreview()"
+          >
+            <i class="bi" [class.bi-eye]="!isPreviewMode()" [class.bi-eye-slash]="isPreviewMode()"></i>
+          </button>
+          <button
+            type="button"
+            class="text-gray-400 hover:text-gray-600"
+            (click)="exportConfiguration()"
+          >
+            <i class="bi bi-download"></i>
+          </button>
+          <button
+            type="button"
+            class="text-gray-400 hover:text-gray-600"
+            (click)="importConfiguration()"
+          >
+            <i class="bi bi-upload"></i>
+          </button>
+          <button
+            type="button"
+            class="text-gray-400 hover:text-gray-600"
+            (click)="editGroup(selectedGroup)"
+          >
+            <i class="bi bi-pencil"></i>
+          </button>
+          <button
+            type="button"
+            class="text-gray-400 hover:text-gray-600"
+            (click)="duplicateGroup(selectedGroup)"
+          >
+            <i class="bi bi-files"></i>
+          </button>
+          <button
+            type="button"
+            class="text-gray-400 hover:text-red-600"
+            (click)="deleteGroup(selectedGroup)"
+          >
+            <i class="bi bi-trash"></i>
+          </button>
+        </div>
+      </div>
+
+      @if (isPreviewMode()) {
+        <app-preview></app-preview>
+      } @else {
+        @if (selectedGroup.elements.length === 0) {
+          <div class="text-center text-gray-500 py-8">
+            Drag and drop form elements here
+          </div>
+        } @else {
+          @for (element of selectedGroup.elements; track element.id) {
+            <div
+              class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 cursor-move"
+              [class.bg-blue-50]="draggedOverElement?.id === element.id"
+              draggable="true"
+              (dragstart)="onElementDragStart($event, element)"
+              (dragenter)="onElementDragEnter($event, element)"
+              (dragover)="onElementDragOver($event)"
+              (dragleave)="onElementDragLeave($event)"
+              (drop)="onElementDrop($event, element)"
+            >
+              <div class="flex items-center justify-between">
+                <div class="flex-grow">
+                  <div class="flex items-center gap-2">
+                    <i class="bi bi-grip-vertical text-gray-400"></i>
+                    <h3 class="font-medium">{{ element.label }}</h3>
+                    @if (element.required) {
+                      <span class="text-red-500">*</span>
+                    }
+                  </div>
+                  <p class="text-sm text-gray-500">{{ element.type | titlecase }}</p>
+                </div>
+                <div class="flex items-center gap-2">
+                  <button
+                    type="button"
+                    class="text-blue-600 hover:text-blue-800"
+                    (click)="editElement(selectedGroup.id, element)"
+                  >
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  <button
+                    type="button"
+                    class="text-red-600 hover:text-red-800"
+                    (click)="deleteElement(selectedGroup.id, element.id)"
+                  >
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          }
+        }
+      }
+    </div>
+  } @else {
+    <div class="text-center text-gray-500 py-8">
+      Select a form group to view its elements
+    </div>
+  }
+</div>
+
+<app-element-editor
+  [(visible)]="showEditor"
+  [element]="currentElement"
+  [group]="selectedGroup()"
+  (cancel)="showEditor = false"
+/>
+
+<p-dialog
+  [(visible)]="confirmDialogVisible"
+  [modal]="true"
+  header="Confirm Delete"
+  [style]="{ width: '25rem' }"
+>
+  <p class="text-gray-600">
+    Are you sure you want to delete this {{ itemToDelete?.elementId ? 'element' : 'group' }}?
+    This action cannot be undone.
+  </p>
+  <ng-template pTemplate="footer">
+    <p-button
+      label="Cancel"
+      (click)="cancelDelete()"
+      styleClass="p-button-text"
+    ></p-button>
+    <p-button
+      label="Delete"
+      severity="danger"
+      (click)="confirmDelete()"
+    ></p-button>
+  </ng-template>
+</p-dialog>
