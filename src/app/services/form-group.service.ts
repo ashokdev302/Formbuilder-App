@@ -34,19 +34,57 @@ export interface FormGroup {
   providedIn: 'root'
 })
 export class FormGroupService {
-  private formGroups = new BehaviorSubject<FormGroup[]>([
-    {id: 1, name: "Group 1", description: "Description 1", elements: []},
-    {id: 2, name: "Group 2", description: "Description 2", elements: []},
-    {id: 3, name: "Group 3", description: "Description 3", elements: []}
-  ]);
+  private readonly STORAGE_KEY = 'formGroups';
+  private readonly SELECTED_GROUP_KEY = 'selectedGroup';
+  private formGroups = new BehaviorSubject<FormGroup[]>(this.loadFromStorage());
+  private selectedGroup = new BehaviorSubject<FormGroup | null>(this.loadSelectedGroup());
 
-  private selectedGroup = new BehaviorSubject<FormGroup | null>(null);
+  private loadFromStorage(): FormGroup[] {
+    const stored = localStorage.getItem(this.STORAGE_KEY);
+    if (stored) {
+      return JSON.parse(stored);
+    }
+    return [];
+  }
+
+  private saveToStorage(groups: FormGroup[]) {
+    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(groups));
+  }
+
+  private loadSelectedGroup(): FormGroup | null {
+    const stored = localStorage.getItem(this.SELECTED_GROUP_KEY);
+    return stored ? JSON.parse(stored) : null;
+  }
+
+  private saveSelectedGroup(group: FormGroup | null) {
+    if (group) {
+      localStorage.setItem(this.SELECTED_GROUP_KEY, JSON.stringify(group));
+    } else {
+      localStorage.removeItem(this.SELECTED_GROUP_KEY);
+    }
+  }
 
   formGroups$ = this.formGroups.asObservable();
   selectedGroup$ = this.selectedGroup.asObservable();
 
-  selectGroup(group: FormGroup) {
+  constructor() {
+    this.formGroups$.subscribe(groups => {
+      this.saveToStorage(groups);
+      const selectedGroup = this.selectedGroup.value;
+      if (selectedGroup) {
+        const updatedGroup = groups.find(g => g.id === selectedGroup.id);
+        if (updatedGroup) {
+          this.selectGroup(updatedGroup);
+        } else {
+          this.selectGroup(null);
+        }
+      }
+    });
+  }
+
+  selectGroup(group: FormGroup | null) {
     this.selectedGroup.next(group);
+    this.saveSelectedGroup(group);
   }
 
   addGroup(group: Omit<FormGroup, 'id'>) {
@@ -115,7 +153,6 @@ export class FormGroupService {
 
     this.formGroups.next(updatedGroups);
 
-    // Update selected group if it's the one being modified
     if (this.selectedGroup.value?.id === groupId) {
       const updatedGroup = updatedGroups.find(g => g.id === groupId);
       if (updatedGroup) {
@@ -134,7 +171,6 @@ export class FormGroupService {
 
     this.formGroups.next(updatedGroups);
 
-    // Update selected group if it's the one being modified
     if (this.selectedGroup.value?.id === groupId) {
       const updatedGroup = updatedGroups.find(g => g.id === groupId);
       if (updatedGroup) {
@@ -144,8 +180,7 @@ export class FormGroupService {
   }
 
   editGroup(group: FormGroup) {
-    // This is just a signal to the left-pane component to open its dialog
-    // The actual update will be done through updateGroup
+
     this.selectGroup(group);
   }
 }

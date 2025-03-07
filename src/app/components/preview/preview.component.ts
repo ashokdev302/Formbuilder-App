@@ -237,9 +237,7 @@ import { HttpClient } from '@angular/common/http';
 export class PreviewComponent implements OnInit, OnDestroy {
   private fb = inject(FormBuilder);
   private formGroupService = inject(FormGroupService);
-  private messageService = inject(MessageService);
-  private http = inject(HttpClient);
-
+  currentGroup:any
   selectedGroup$ = this.formGroupService.selectedGroup$;
   previewForm: FormGroup;
   private previewUrls: { [key: string]: string } = {};
@@ -251,6 +249,7 @@ export class PreviewComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.selectedGroup$.subscribe(group => {
       if (group) {
+        this.currentGroup = group;
         this.createForm(group);
       }
     });
@@ -269,7 +268,7 @@ export class PreviewComponent implements OnInit, OnDestroy {
       this.previewForm.patchValue({
         ['field-' + elementId]: file
       });
-      console.log('Form value after selection:', this.previewForm.value);
+      console.log( this.previewForm.value);
     }
   }
 
@@ -289,7 +288,6 @@ export class PreviewComponent implements OnInit, OnDestroy {
     group.elements.forEach(element => {
       const validators = element.required ? [Validators.required] : [];
 
-      // Add email validation if the placeholder contains 'email' or 'e-mail'
       if (element.placeholder?.toLowerCase().includes('email') ||
           element.placeholder?.toLowerCase().includes('e-mail') ||
           element.label?.toLowerCase().includes('email') ||
@@ -297,26 +295,9 @@ export class PreviewComponent implements OnInit, OnDestroy {
         validators.push(Validators.email);
       }
 
-      let defaultValue: any = null;
-
-      switch (element.type) {
-        case 'multi-selection':
-          defaultValue = [];
-          break;
-        case 'integer':
-          defaultValue = null;
-          break;
-        case 'date':
-        case 'time':
-        case 'datetime':
-          defaultValue = null;
-          break;
-        case 'upload':
-          defaultValue = null;
-          break;
-        default:
-          defaultValue = '';
-      }
+      let defaultValue: any = element.defaultValue;
+      console.log(defaultValue);
+      
 
       formControls['field-' + element.id] = [defaultValue, validators];
     });
@@ -325,24 +306,25 @@ export class PreviewComponent implements OnInit, OnDestroy {
   }
 
   onSubmit() {
-    if (this.previewForm.valid) {
-      console.log('Form submitted:', this.previewForm.value);
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Success',
-        detail: 'Form submitted successfully'
-      });
+    if (this.previewForm.valid && this.currentGroup) {
+      const updatedElements = this.currentGroup.elements.map((element:any) => ({
+        ...element,
+        defaultValue: this.previewForm.get('field-' + element.id)?.value || null
+      }));
+
+      const updatedGroup = {
+        ...this.currentGroup,
+        elements: updatedElements
+      };
+
+      this.formGroupService.updateGroup(updatedGroup);
+
+
+      this.previewForm.reset();
     } else {
-      // Mark all fields as touched to show validation errors
       Object.keys(this.previewForm.controls).forEach(key => {
         const control = this.previewForm.get(key);
         control?.markAsTouched();
-      });
-
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'Please fill in all required fields correctly'
       });
     }
   }
